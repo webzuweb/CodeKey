@@ -1,0 +1,401 @@
+{
+  "status": "PASS",
+  "checks": 79,
+  "details": [
+    {
+      "name": "pubspec name",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Dart SDK minimum",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Android-only source tree",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "localization ru key parity",
+      "result": "PASS",
+      "detail": "101 keys"
+    },
+    {
+      "name": "localization en key parity",
+      "result": "PASS",
+      "detail": "101 keys"
+    },
+    {
+      "name": "localization es key parity",
+      "result": "PASS",
+      "detail": "101 keys"
+    },
+    {
+      "name": "localization zh key parity",
+      "result": "PASS",
+      "detail": "101 keys"
+    },
+    {
+      "name": "translation calls resolved",
+      "result": "PASS",
+      "detail": "85 direct keys"
+    },
+    {
+      "name": "BLE UUID parity",
+      "result": "PASS",
+      "detail": "6 UUIDs"
+    },
+    {
+      "name": "no hardware call pinMode(",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "no hardware call digitalRead(",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "no hardware call digitalWrite(",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "no hardware call analogWrite(",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "no hardware pin constants",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "indefinite BLE advertising",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "advertising watchdog",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "auth timeout",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "auth failure disconnect",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "disconnect releases HID",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror Auth.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror Auth.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror BleServer.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror BleServer.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror Crc32.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror Crc32.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror DeviceConfig.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror DeviceConfig.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror HidEngine.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror HidEngine.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror JobEngine.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror JobEngine.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino mirror config",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Arduino main mirror",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes settings.os",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes settings.editor",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes settings.layout",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes settings.usbVid",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes settings.usbPid",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "LLM payload excludes bleDeviceId",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "strict JSON response required",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "manifest BLE permission patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "manifest camera permission patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "manifest HTTPS-only patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "minSdk patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Chinese OCR model patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "release signing patch",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "key properties example",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/llm_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/home_page.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/dlp_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/theme.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/job_protocol.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/ocr_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/app.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/main.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/models.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/settings_page.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/settings_store.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/localization.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/controller_scope.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/ble_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/lib/app_controller.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/test/dlp_service_test.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/test/llm_service_test.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-android/test/job_protocol_test.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/BleServer.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/Crc32.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/HidEngine.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/Auth.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/main.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/JobEngine.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/DeviceConfig.cpp",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/Auth.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/BleServer.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/Crc32.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/DeviceConfig.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/HidEngine.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance codekey-esp32/src/JobEngine.h",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "CRC32 compiled check vector",
+      "result": "PASS",
+      "detail": "CBF43926"
+    }
+  ]
+}
