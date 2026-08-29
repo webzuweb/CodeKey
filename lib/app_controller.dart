@@ -197,6 +197,7 @@ class CodeKeyController extends ChangeNotifier {
       ScreenshotItem(id: id, path: image.path),
     ];
     notifyListeners();
+    _logger.info('camera.thumbnail_visible', {'screenshotId': id});
     _logger.info('camera.capture_added', {
       'screenshotId': id,
       'screenshotCount': screenshots.length,
@@ -364,7 +365,6 @@ class CodeKeyController extends ChangeNotifier {
     final request = userRequest.trim();
     final code = combinedCode;
     if (request.isEmpty) throw const ControllerException('request_required');
-    if (code.isEmpty) throw const ControllerException('code_required');
     if (screenshots.any(
       (item) =>
           item.state == OcrState.processing || item.state == OcrState.queued,
@@ -380,6 +380,7 @@ class CodeKeyController extends ChangeNotifier {
       throw const ControllerException('api_not_configured');
     }
 
+    _logger.info('submission.prepared', {'hasScreenshots': screenshots.isNotEmpty, 'codeCharacters': code.length, 'requestCharacters': request.length});
     final report = _dlpService.scan(
       request: request,
       code: code,

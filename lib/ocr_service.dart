@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -67,11 +69,57 @@ class OcrService {
   ) async {
     final recognizer = TextRecognizer(script: script);
     try {
-      final image = InputImage.fromFilePath(imagePath);
-      final result = await recognizer.processImage(image);
-      return result.text;
+      final file = File(imagePath);
+      try {
+        // Prefer the file constructor. It avoids the path-only conversion path
+        // that has produced native InputImage/ML Kit crashes on some Android ROMs.
+        final result = await recognizer.processImage(InputImage.fromFile(file));
+        return result.text;
+      } on Object catch (error, stackTrace) {
+        if (!Platform.isAndroid) rethrow;
+        _logger.warning('ocr.file_input_failed_using_bitmap_fallback', {
+          'script': script.name,
+          'errorType': error.runtimeType.toString(),
+        });
+        _logger.error(
+          'ocr.file_input_exception',
+          error,
+          stackTrace: stackTrace,
+          data: {'script': script.name},
+        );
+        final bitmapInput = await _bitmapInput(file);
+        final result = await recognizer.processImage(bitmapInput);
+        return result.text;
+      }
     } finally {
       await recognizer.close();
+    }
+  }
+
+  Future<InputImage> _bitmapInput(File file) async {
+    final encoded = await file.readAsBytes();
+    if (encoded.isEmpty) throw const OcrException('image_file_empty');
+    final codec = await ui.instantiateImageCodec(encoded);
+    try {
+      final frame = await codec.getNextFrame();
+      try {
+        final data = await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        if (data == null) throw const OcrException('image_bitmap_conversion_failed');
+        final Uint8List rgba = data.buffer.asUint8List(
+          data.offsetInBytes,
+          data.lengthInBytes,
+        );
+        return InputImage.fromBitmap(
+          bitmap: rgba,
+          width: frame.image.width,
+          height: frame.image.height,
+          rotation: 0,
+        );
+      } finally {
+        frame.image.dispose();
+      }
+    } finally {
+      codec.dispose();
     }
   }
 

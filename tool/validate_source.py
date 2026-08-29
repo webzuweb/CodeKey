@@ -269,9 +269,9 @@ def main() -> int:
         validator.check(f"required file {relative}", (ROOT / relative).exists())
 
     pubspec = (ROOT / "pubspec.yaml").read_text(encoding="utf-8")
-    validator.check("package version 0.3.0+3", "version: 0.3.0+3" in pubspec)
+    validator.check("package version 0.3.1+4", "version: 0.3.1+4" in pubspec)
     validator.check("Android and iOS description", "Android and iOS" in pubspec)
-    validator.check("ML Kit dependency", "google_mlkit_text_recognition: ^0.17.1" in pubspec)
+    validator.check("ML Kit dependency", "google_mlkit_text_recognition: 0.15.1" in pubspec)
     validator.check("diagnostic share dependency", "share_plus: ^13.3.0" in pubspec)
 
     localization = (ROOT / "lib/localization.dart").read_text(encoding="utf-8")

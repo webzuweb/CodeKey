@@ -15,7 +15,7 @@ class LlmService {
 
   static const systemPrompt = '''You are a programming assistant.
 
-You receive exactly two user-provided values: a natural-language request and OCR-recognized source code. Infer the programming language from the code. Do not ask for the operating system, code editor, keyboard layout, device identity, or programming-language metadata.
+You always receive a natural-language user request. You may also receive OCR-recognized source code when the user attached screenshots. If source code is present, infer its programming language from the code. If no source code is present, answer the programming request using only the user's text. Do not ask for the operating system, code editor, keyboard layout, device identity, or programming-language metadata.
 
 Return exactly one valid JSON object. Do not use Markdown fences. Do not add any text before or after JSON. The explanation and cursor-placement instruction must use the same natural language as the user's request.
 
@@ -31,8 +31,13 @@ Required schema:
 
 Never put keyboard commands, hotkeys, shell commands for automation, or markers such as <CTRL+S> outside the literal code requested by the user. The mobile app independently decides all keyboard actions.''';
 
-  String buildUserMessage({required String request, required String code}) =>
-      'USER REQUEST:\n$request\n\nOCR SOURCE CODE:\n$code';
+  String buildUserMessage({required String request, required String code}) {
+    final trimmedCode = code.trim();
+    if (trimmedCode.isEmpty) {
+      return 'USER REQUEST:\n$request\n\nNO SCREENSHOT OR OCR SOURCE CODE WAS PROVIDED.';
+    }
+    return 'USER REQUEST:\n$request\n\nOCR SOURCE CODE:\n$trimmedCode';
+  }
 
   Future<LlmCodingResponse> complete({
     required AppSettings settings,

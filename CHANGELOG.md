@@ -1,3 +1,11 @@
+# 0.3.1
+
+- Allow text-only LLM requests without screenshots.
+- Keep new camera thumbnails visible immediately above the prompt while OCR runs.
+- Pin ML Kit Text Recognition to 0.15.1 and add Android bitmap InputImage fallback for native OCR crashes.
+- Keep one-tap keyboard-layout cycling on the main header and force immediate UI refresh through controller settings updates.
+- Add OCR fallback diagnostic events.
+
 # Changelog
 
 ## 0.3.0+3
