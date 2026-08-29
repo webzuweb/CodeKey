@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'app_controller.dart';
 import 'controller_scope.dart';
 import 'job_protocol.dart';
+import 'instant_camera_page.dart';
 import 'localization.dart';
 import 'models.dart';
 import 'settings_page.dart';
@@ -650,7 +651,14 @@ class _Composer extends StatelessWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   if (index == controller.screenshots.length) {
-                    return _AddScreenshotTile(onTap: controller.addScreenshot);
+                    return _AddScreenshotTile(onTap: () async {
+                      final image = await Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const InstantCameraPage()),
+                      );
+                      if (image != null && context.mounted) {
+                        await controller.addCapturedScreenshot(image);
+                      }
+                    });
                   }
                   final item = controller.screenshots[index];
                   return _ScreenshotTile(
@@ -671,7 +679,12 @@ class _Composer extends StatelessWidget {
                 tooltip: strings.t('addPhoto'),
                 onPressed: controller.processingApi ? null : () async {
                   try {
-                    await controller.addScreenshot();
+                    final image = await Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const InstantCameraPage()),
+                    );
+                    if (image != null && context.mounted) {
+                      await controller.addCapturedScreenshot(image);
+                    }
                   } on Object catch (error) {
                     if (context.mounted) _showError(context, error);
                   }

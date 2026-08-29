@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -24,7 +24,6 @@ class CodeKeyController extends ChangeNotifier {
     DlpService? dlpService,
     LlmService? llmService,
     JobCompiler? jobCompiler,
-    ImagePicker? imagePicker,
     AppLogger? logger,
   }) : _settingsStore = settingsStore ?? SettingsStore(),
        _bleService = bleService ?? CodeKeyBleService(),
@@ -32,7 +31,6 @@ class CodeKeyController extends ChangeNotifier {
        _dlpService = dlpService ?? DlpService(),
        _llmService = llmService ?? LlmService(),
        _jobCompiler = jobCompiler ?? JobCompiler(),
-       _imagePicker = imagePicker ?? ImagePicker(),
        _logger = logger ?? AppLogger.instance;
 
   final SettingsStore _settingsStore;
@@ -41,7 +39,6 @@ class CodeKeyController extends ChangeNotifier {
   final DlpService _dlpService;
   final LlmService _llmService;
   final JobCompiler _jobCompiler;
-  final ImagePicker _imagePicker;
   final AppLogger _logger;
 
   AppSettings settings = const AppSettings();
@@ -87,7 +84,6 @@ class CodeKeyController extends ChangeNotifier {
       if (settings.bleDeviceId.isNotEmpty && settings.setupKey.isNotEmpty) {
         unawaited(connectSavedDevice(silent: true));
       }
-      unawaited(_recoverLostCameraImage());
     } on Object catch (exception, stackTrace) {
       _logger.error(
         'controller.initialize_failed',
@@ -95,24 +91,6 @@ class CodeKeyController extends ChangeNotifier {
         stackTrace: stackTrace,
       );
       rethrow;
-    }
-  }
-
-  Future<void> _recoverLostCameraImage() async {
-    try {
-      final recovered = await _imagePicker.retrieveLostData();
-      final files = recovered.files;
-      if (files == null || files.isEmpty) return;
-      _logger.info('camera.lost_data_recovered', {'count': files.length});
-      for (final file in files) {
-        await _addImageFile(file);
-      }
-    } on Object catch (exception, stackTrace) {
-      _logger.error(
-        'camera.lost_data_recovery_failed',
-        exception,
-        stackTrace: stackTrace,
-      );
     }
   }
 
@@ -158,24 +136,7 @@ class CodeKeyController extends ChangeNotifier {
     return next;
   }
 
-  Future<void> addScreenshot() async {
-    final permission = await Permission.camera.request();
-    if (!permission.isGranted) {
-      _logger.warning('camera.permission_denied', {'status': permission.name});
-      throw const ControllerException('camera_permission_denied');
-    }
-
-    _logger.info('camera.capture_started');
-    final image = await _imagePicker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 94,
-      requestFullMetadata: false,
-    );
-    if (image == null) {
-      _logger.info('camera.capture_cancelled');
-      return;
-    }
-
+  Future<void> addCapturedScreenshot(XFile image) async {
     if (response != null) {
       await _clearScreenshotFiles();
       response = null;
@@ -225,7 +186,7 @@ class CodeKeyController extends ChangeNotifier {
         _updateScreenshot(id, (item) => item.copyWith(path: path));
       }
     } on Object catch (exception, stackTrace) {
-      // The original image_picker path is still usable in most cases.
+      // Keep the original captured file path if copying to app storage fails.
       _logger.error(
         'camera.persist_failed',
         exception,

@@ -1,3 +1,10 @@
+# 0.3.2
+
+- Replaced system `image_picker` camera flow with an in-app `camera` preview.
+- A captured image returns immediately after the shutter press; there is no OEM camera confirmation step.
+- The screenshot is inserted above the prompt before OCR starts.
+- Added diagnostic events `camera.inline_ready`, `camera.inline_capture_started`, and `camera.inline_capture_completed`.
+
 # 0.3.1
 
 - Allow text-only LLM requests without screenshots.

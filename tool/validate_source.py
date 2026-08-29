@@ -269,7 +269,7 @@ def main() -> int:
         validator.check(f"required file {relative}", (ROOT / relative).exists())
 
     pubspec = (ROOT / "pubspec.yaml").read_text(encoding="utf-8")
-    validator.check("package version 0.3.1+4", "version: 0.3.1+4" in pubspec)
+    validator.check("package version 0.3.2+5", "version: 0.3.2+5" in pubspec)
     validator.check("Android and iOS description", "Android and iOS" in pubspec)
     validator.check("ML Kit dependency", "google_mlkit_text_recognition: 0.15.1" in pubspec)
     validator.check("diagnostic share dependency", "share_plus: ^13.3.0" in pubspec)
@@ -304,7 +304,7 @@ def main() -> int:
     bootstrap = (ROOT / "tool/bootstrap_platforms.py").read_text()
 
     validator.check("immediate screenshot insertion", controller.index("ScreenshotItem(id: id, path: image.path)") < controller.index("unawaited(_persistAndRecognize"))
-    validator.check("lost camera data recovery", "retrieveLostData" in controller)
+    validator.check("in-app camera dependency", "camera: ^0.12.0+2" in pubspec)
     validator.check("OCR retry", "Future<void> retryOcr" in controller and "retryOcr" in home)
     validator.check("screenshot delete cross", "Icons.close_rounded" in home and "removeScreenshot" in home)
     validator.check("language applies immediately", "updateInterfaceLanguage" in settings and "updateInterfaceLanguage" in controller)

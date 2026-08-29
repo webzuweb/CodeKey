@@ -1,8 +1,8 @@
-# CodeKey Mobile 0.3.1 — Android и iOS
+# CodeKey Mobile 0.3.2 — Android и iOS
 
 Flutter-приложение для управления CodeKey ESP32-S3, который работает как USB HID-клавиатура. Смартфон фотографирует код, выполняет локальный OCR, проверяет текст перед отправкой во внешний API, показывает объяснение и передаёт подтверждённый код ESP32 по BLE.
 
-## Что исправлено в 0.3.1
+## Что исправлено в 0.3.2
 
 - возвращены обе мобильные платформы: Android и iOS;
 - снимок появляется в ленте сразу после закрытия камеры, а OCR продолжается асинхронно;
@@ -147,8 +147,13 @@ CodeKey-diagnostics-<UTC>.jsonl
 
 ## ESP32
 
-Мобильная версия 0.3.1 совместима с прошивкой CodeKey ESP32-S3 0.2.0 без кнопок и светодиодов. BLE UUID и бинарный job protocol не изменены.
+Мобильная версия 0.3.2 совместима с прошивкой CodeKey ESP32-S3 0.2.0 без кнопок и светодиодов. BLE UUID и бинарный job protocol не изменены.
 
-## 0.3.1 OCR workaround
+## 0.3.2 OCR workaround
 
 If Android ML Kit fails in its native file-input path, CodeKey retries OCR using an in-memory RGBA bitmap (`InputImage.fromBitmap`). Captured thumbnails are added to UI state before OCR starts. A request can also be sent without screenshots; in that mode no OCR source-code block is sent to the API.
+
+
+## Instant camera capture (0.3.2)
+
+The camera button opens an in-app Flutter Camera preview rather than the OEM camera Activity. After the shutter is pressed, the captured image is returned immediately and inserted above the prompt before OCR begins. This avoids the extra confirmation button shown by some Android camera applications.

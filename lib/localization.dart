@@ -33,6 +33,9 @@ class CodeKeyLocalizations {
 
   static const Map<String, Map<String, String>> _translations = {
     'ru': {
+    'cameraUnavailable': 'Камера недоступна',
+    'cameraOpenFailed': 'Не удалось открыть камеру',
+
       'appName': 'CodeKey AI',
       'connected': 'Подключено',
       'disconnected': 'Не подключено',
@@ -181,6 +184,9 @@ class CodeKeyLocalizations {
       'technicalWarnings': 'Технические предупреждения',
     },
     'en': {
+    'cameraUnavailable': 'Camera unavailable',
+    'cameraOpenFailed': 'Could not open camera',
+
       'appName': 'CodeKey AI',
       'connected': 'Connected',
       'disconnected': 'Disconnected',
@@ -329,6 +335,9 @@ class CodeKeyLocalizations {
       'technicalWarnings': 'Technical warnings',
     },
     'es': {
+    'cameraUnavailable': 'Cámara no disponible',
+    'cameraOpenFailed': 'No se pudo abrir la cámara',
+
       'appName': 'CodeKey AI',
       'connected': 'Conectado',
       'disconnected': 'Sin conexión',
@@ -477,6 +486,9 @@ class CodeKeyLocalizations {
       'technicalWarnings': 'Advertencias técnicas',
     },
     'zh': {
+    'cameraUnavailable': '相机不可用',
+    'cameraOpenFailed': '无法打开相机',
+
       'appName': 'CodeKey AI',
       'connected': '已连接',
       'disconnected': '未连接',

@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "checks": 80,
+  "checks": 81,
   "flutterExecuted": false,
   "details": [
     {
@@ -64,7 +64,7 @@
       "detail": null
     },
     {
-      "name": "package version 0.3.1+4",
+      "name": "package version 0.3.2+5",
       "result": "PASS",
       "detail": null
     },
@@ -86,22 +86,22 @@
     {
       "name": "localization ru key parity",
       "result": "PASS",
-      "detail": "146 keys"
+      "detail": "148 keys"
     },
     {
       "name": "localization en key parity",
       "result": "PASS",
-      "detail": "146 keys"
+      "detail": "148 keys"
     },
     {
       "name": "localization es key parity",
       "result": "PASS",
-      "detail": "146 keys"
+      "detail": "148 keys"
     },
     {
       "name": "localization zh key parity",
       "result": "PASS",
-      "detail": "146 keys"
+      "detail": "148 keys"
     },
     {
       "name": "direct localization calls resolved",
@@ -140,6 +140,11 @@
     },
     {
       "name": "delimiter balance lib/home_page.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "delimiter balance lib/instant_camera_page.dart",
       "result": "PASS",
       "detail": null
     },
@@ -219,7 +224,7 @@
       "detail": null
     },
     {
-      "name": "lost camera data recovery",
+      "name": "in-app camera dependency",
       "result": "PASS",
       "detail": null
     },
