@@ -2,7 +2,7 @@
 
 ## External API boundary
 
-Photos remain local to the Android application. ML Kit OCR produces text on the phone. Only the reviewed user request and reviewed/redacted OCR text are sent to the configured external API.
+Photos remain local to the Android or iOS application sandbox. ML Kit OCR produces text on the phone. Only the reviewed user request and reviewed/redacted OCR text are sent to the configured external API.
 
 The local DLP layer detects common private keys, JWTs, API tokens, credential assignments, connection strings, internal network addresses, email, phone numbers, IBAN, card-like values with Luhn validation, file paths, high-entropy contextual secrets and configured corporate terms.
 
@@ -18,7 +18,7 @@ The preview protocol does not encrypt application payloads beyond whatever link-
 
 ## Typing safety without buttons
 
-- The app provides pause, resume and stop controls.
+- The Android/iOS app provides pause, resume and stop controls.
 - BLE disconnect cancels the active job and releases all HID modifiers.
 - ESP32 validates job length, CRC and every operation before execution.
 - Code text is never parsed for hotkey markers.

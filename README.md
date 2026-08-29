@@ -1,84 +1,150 @@
-# CodeKey Android application 0.2.0
+# CodeKey Mobile 0.3.0 — Android и iOS
 
-Android-only Flutter controller for the CodeKey ESP32-S3 USB HID keyboard bridge.
+Flutter-приложение для управления CodeKey ESP32-S3, который работает как USB HID-клавиатура. Смартфон фотографирует код, выполняет локальный OCR, проверяет текст перед отправкой во внешний API, показывает объяснение и передаёт подтверждённый код ESP32 по BLE.
 
-## Implemented flow
+## Что исправлено в 0.3.0
 
-1. Find a CodeKey ESP32-S3 over BLE. The firmware stays discoverable while no phone is connected.
-2. Authenticate with the individual setup key stored in Android Keystore-backed secure storage.
-3. Take several workstation-screen photos.
-4. Run ML Kit Text Recognition v2 locally on each photo.
-5. Tap any thumbnail to review and edit the OCR text.
-6. Enter the user request.
-7. Run the local DLP scan and inspect the exact masked external-API payload.
-8. Call an OpenAI-compatible or Anthropic external API.
-9. Validate the strict JSON response: explanation, cursor placement, operation, code and warnings.
-10. Show the explanation above the code. Screenshots are hidden after a successful response.
-11. Only after the user taps **Печать / Print**, show the cursor-placement instruction.
-12. Compile the approved code and local editor/OS hotkeys into allowlisted HID records, upload them over BLE and start after a countdown.
+- возвращены обе мобильные платформы: Android и iOS;
+- снимок появляется в ленте сразу после закрытия камеры, а OCR продолжается асинхронно;
+- для каждого снимка показываются состояние и прогресс OCR;
+- на миниатюре есть крестик удаления;
+- при ошибке OCR можно повторить распознавание либо отредактировать текст вручную;
+- добавлен перехват восстановленного снимка после уничтожения Android Activity;
+- смена языка интерфейса применяется немедленно, без перезапуска;
+- добавлен отдельный профиль DeepSeek API;
+- нажатие на иконку раскладки в шапке мгновенно переключает следующий сохранённый профиль;
+- в настройках можно создавать и удалять пользовательские раскладки;
+- поиск ESP32 показывает индикатор, список результатов, пустой результат или локализованную ошибку;
+- блок USB VID/PID показывается только после авторизованного подключения к ESP32;
+- кнопка «Сохранить» сохраняет настройки и возвращает на главный экран;
+- добавлен диагностический JSONL-журнал с ротацией и отправкой через системное меню Android/iOS.
 
-## Interface
+## Основной сценарий
 
-- Premium dark ChatGPT-like conversation screen.
-- Russian, English, Spanish and Simplified Chinese.
-- Settings are on a separate page.
-- Header contains only device status, keyboard layout and Settings.
-- Several OCR screenshots per request.
-- Editable OCR popup.
-- No recent-actions or quick-actions sections.
+1. В настройках выбрать язык интерфейса, ОС, редактор, раскладки и внешний API.
+2. Нажать «Найти устройства», выбрать ESP32 и ввести индивидуальный setup key.
+3. На главном экране сделать один или несколько снимков кода.
+4. Проверить OCR-текст по нажатию на миниатюру.
+5. Ввести запрос пользователя.
+6. Проверить локальный DLP-отчёт и точный замаскированный payload.
+7. Отправить текст во внешний API.
+8. Прочитать объяснение модели и проверить код.
+9. Нажать «Печать»; только после этого приложение покажет, куда поставить курсор.
+10. Подтвердить готовность и запустить ввод через ESP32.
 
-## ESP32 connection behavior
+## Данные внешнего API
 
-- No hardware pairing button is expected.
-- No hardware STOP button or status LED is expected.
-- The ESP32 advertises continuously until a smartphone connects.
-- A new smartphone with the correct setup key can authenticate and replace the stored client ID.
-- Only one BLE connection is accepted at a time.
-- Disconnecting BLE cancels the active typing job and releases all keys.
+Во внешний API передаются только:
 
-## Android project generation
+- системная инструкция о строгом JSON-ответе;
+- запрос пользователя;
+- проверенный и при необходимости замаскированный OCR-текст.
 
-The archive requires Flutter 3.44 or newer (Dart 3.12 or newer). It contains the Flutter sources and an Android-only bootstrap script. It deliberately generates the Android runner using the locally installed Flutter SDK, so Gradle files match that SDK revision.
+Не передаются фотография, ОС, редактор, активная раскладка, ESP32 ID, VID/PID, скорость печати и диагностический журнал.
 
-```bash
-python tool/bootstrap_android.py
-```
+## Поддерживаемые API
 
-Then build with:
+- OpenAI-compatible Chat Completions;
+- DeepSeek API;
+- Anthropic Messages API.
 
-```bash
-flutter build apk --release
-```
-
-or use:
+Предустановка DeepSeek:
 
 ```text
-Windows: tool\build_apk.bat
-Linux:   ./tool/build_apk.sh
+Base URL: https://api.deepseek.com
+Model:    deepseek-v4-flash
 ```
 
-The build scripts run `flutter analyze`, tests and release APK compilation.
+Поля URL и модели остаются редактируемыми.
 
-## Signing
+## Требования к инструментам
 
-See:
+Из-за используемой версии `share_plus` нужен Flutter 3.38.1 или новее и Dart 3.10 или новее. Для Android нужен Java 17. Для iOS нужны macOS, Xcode 15.3 или новее и deployment target iOS 15.5.
+
+## Генерация Android и iOS runner
+
+Исходный архив не фиксирует автоматически сгенерированные runner-файлы. Это уменьшает конфликты между версиями Flutter. После распаковки выполните:
+
+```bash
+python3 tool/bootstrap_platforms.py
+```
+
+На Windows:
+
+```bat
+tool\bootstrap_platforms.bat
+```
+
+Скрипт создаёт обе платформы и автоматически добавляет:
+
+- Android camera/BLE permissions и `minSdk 24`;
+- Android ML Kit Simplified Chinese OCR dependency;
+- iOS camera/photo-library/Bluetooth usage descriptions;
+- iOS deployment target 15.5 и исключение armv7;
+- Chinese ML Kit pod;
+- permission-handler macros для камеры и Bluetooth;
+- шаблон Android release-подписи.
+
+## Сборка Android APK
+
+Windows:
+
+```bat
+BUILD_ANDROID.bat
+```
+
+macOS/Linux:
+
+```bash
+./BUILD_ANDROID.sh
+```
+
+Результат:
 
 ```text
-docs/ANDROID_BUILD_AND_SIGNING_RU.md
+build/app/outputs/flutter-apk/app-release.apk
 ```
 
-After bootstrap, copy `android/key.properties.example` to `android/key.properties`, provide your private keystore values and rebuild. Without that file, the generated template uses debug signing for a test release build.
+Подпись описана в `docs/ANDROID_BUILD_AND_SIGNING_RU.md`.
 
-## External API data
+## Сборка iOS
 
-The API receives only:
+Только на macOS:
 
-- the system JSON-output instruction;
-- the user's request;
-- reviewed and locally redacted OCR text.
+```bash
+./BUILD_IOS.sh
+```
 
-The photo, operating system, editor, layout, ESP32 ID and VID/PID are not sent to the LLM API.
+Скрипт создаёт неподписанный Xcode archive. Затем откройте:
 
-## Important limitation
+```text
+ios/Runner.xcworkspace
+```
 
-Technical DLP can detect likely secrets, tokens, credentials, internal hosts and personal data, but it cannot prove that ordinary source code is not confidential intellectual property. The application therefore also shows the exact outbound payload and requires user confirmation.
+и задайте Apple Team, Bundle Identifier и подпись. Подробнее: `docs/IOS_BUILD_AND_SIGNING_RU.md`.
+
+## Диагностический журнал
+
+В настройках откройте **«Диагностика и журналы» → «Отправить журнал для отладки»**. Приложение создаст файл:
+
+```text
+CodeKey-diagnostics-<UTC>.jsonl
+```
+
+и откроет стандартное меню «Поделиться». Этот файл можно отправить в чат для анализа.
+
+По умолчанию журнал не сохраняет:
+
+- исходный код;
+- OCR-текст;
+- запрос пользователя;
+- API key;
+- setup key;
+- bearer-токены;
+- приватные ключи.
+
+Журнал всё равно следует просмотреть перед отправкой. Подробнее: `docs/DIAGNOSTICS_RU.md`.
+
+## ESP32
+
+Мобильная версия 0.3.0 совместима с прошивкой CodeKey ESP32-S3 0.2.0 без кнопок и светодиодов. BLE UUID и бинарный job protocol не изменены.

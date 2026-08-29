@@ -2,12 +2,16 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'app_logger.dart';
 import 'models.dart';
 
 class LlmService {
-  LlmService({http.Client? client}) : _client = client ?? http.Client();
+  LlmService({http.Client? client, AppLogger? logger})
+      : _client = client ?? http.Client(),
+        _logger = logger ?? AppLogger.instance;
 
   final http.Client _client;
+  final AppLogger _logger;
 
   static const systemPrompt = '''You are a programming assistant.
 
@@ -36,29 +40,83 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
     required String code,
   }) async {
     _validateSettings(settings);
-    return switch (settings.apiProvider) {
-      ExternalApiProvider.openAiCompatible => _completeOpenAiCompatible(
-          settings: settings,
-          request: request,
-          code: code,
-        ),
-      ExternalApiProvider.anthropic => _completeAnthropic(
-          settings: settings,
-          request: request,
-          code: code,
-        ),
-    };
+    final stopwatch = Stopwatch()..start();
+    try {
+      final result = switch (settings.apiProvider) {
+        ExternalApiProvider.openAiCompatible => _completeOpenAiCompatible(
+            settings: settings,
+            request: request,
+            code: code,
+          ),
+        ExternalApiProvider.deepSeek => _completeDeepSeek(
+            settings: settings,
+            request: request,
+            code: code,
+          ),
+        ExternalApiProvider.anthropic => _completeAnthropic(
+            settings: settings,
+            request: request,
+            code: code,
+          ),
+      };
+      final response = await result;
+      _logger.info('llm.http_completed', {
+        'provider': settings.apiProvider.name,
+        'host': _safeHost(settings.apiBaseUrl),
+        'model': settings.apiModel,
+        'durationMs': stopwatch.elapsedMilliseconds,
+      });
+      return response;
+    } on Object catch (error, stackTrace) {
+      _logger.error(
+        'llm.http_failed',
+        error,
+        stackTrace: stackTrace,
+        data: {
+          'provider': settings.apiProvider.name,
+          'host': _safeHost(settings.apiBaseUrl),
+          'model': settings.apiModel,
+          'durationMs': stopwatch.elapsedMilliseconds,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<LlmCodingResponse> _completeOpenAiCompatible({
     required AppSettings settings,
     required String request,
     required String code,
+  }) => _completeOpenAiStyle(
+    settings: settings,
+    request: request,
+    code: code,
+    deepSeek: false,
+  );
+
+  Future<LlmCodingResponse> _completeDeepSeek({
+    required AppSettings settings,
+    required String request,
+    required String code,
+  }) => _completeOpenAiStyle(
+    settings: settings,
+    request: request,
+    code: code,
+    deepSeek: true,
+  );
+
+  Future<LlmCodingResponse> _completeOpenAiStyle({
+    required AppSettings settings,
+    required String request,
+    required String code,
+    required bool deepSeek,
   }) async {
     final endpoint = _chatCompletionsUri(settings.apiBaseUrl);
     final body = <String, Object?>{
       'model': settings.apiModel.trim(),
       'temperature': 0.1,
+      'max_tokens': 8192,
+      if (deepSeek) 'thinking': {'type': 'disabled'},
       'messages': [
         {'role': 'system', 'content': systemPrompt},
         {
@@ -70,16 +128,18 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
     };
 
     var response = await _postOpenAi(endpoint, settings, body);
-    if (response.statusCode == 400) {
+    if (response.statusCode == 400 && !deepSeek) {
+      // Some OpenAI-compatible gateways do not implement response_format.
       final retryBody = Map<String, Object?>.from(body)..remove('response_format');
+      _logger.warning('llm.response_format_retry', {
+        'provider': settings.apiProvider.name,
+        'host': endpoint.host,
+      });
       response = await _postOpenAi(endpoint, settings, retryBody);
     }
     _requireSuccess(response);
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw const LlmException('invalid_api_envelope');
-    }
+    final decoded = _decodeEnvelope(response.body);
     final choices = decoded['choices'];
     if (choices is! List || choices.isEmpty || choices.first is! Map) {
       throw const LlmException('missing_api_choices');
@@ -110,10 +170,7 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
     });
     _requireSuccess(response);
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw const LlmException('invalid_api_envelope');
-    }
+    final decoded = _decodeEnvelope(response.body);
     final content = decoded['content'];
     if (content is! List) throw const LlmException('missing_api_message');
     final text = content
@@ -166,14 +223,29 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
         settings.apiKey.trim().isEmpty) {
       throw const LlmException('api_not_configured');
     }
+    final uri = Uri.tryParse(settings.apiBaseUrl.trim());
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      throw const LlmException('invalid_api_url');
+    }
   }
 
   void _requireSuccess(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final details = _safeApiError(response.body);
       throw LlmException(
-        'api_http_${response.statusCode}: ${_safeBody(response.body)}',
+        details.isEmpty
+            ? 'api_http_${response.statusCode}'
+            : 'api_http_${response.statusCode}: $details',
       );
     }
+  }
+
+  Map<String, dynamic> _decodeEnvelope(String body) {
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const LlmException('invalid_api_envelope');
+    }
+    return decoded;
   }
 
   LlmCodingResponse parseResponse(String raw) {
@@ -266,6 +338,18 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
             ],
           },
         ),
+      ExternalApiProvider.deepSeek => _postOpenAi(
+          _chatCompletionsUri(settings.apiBaseUrl),
+          settings,
+          {
+            'model': settings.apiModel,
+            'max_tokens': 1,
+            'thinking': const {'type': 'disabled'},
+            'messages': const [
+              {'role': 'user', 'content': 'Return OK.'},
+            ],
+          },
+        ),
       ExternalApiProvider.anthropic => _postAnthropic(
           _anthropicMessagesUri(settings.apiBaseUrl),
           settings,
@@ -292,10 +376,31 @@ Never put keyboard commands, hotkeys, shell commands for automation, or markers 
     throw const LlmException('invalid_message_content');
   }
 
-  String _safeBody(String body) {
-    final compact = body.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return compact.length <= 500 ? compact : '${compact.substring(0, 500)}…';
+  String _safeApiError(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final error = decoded['error'];
+        if (error is Map) {
+          final type = error['type']?.toString().trim() ?? '';
+          final code = error['code']?.toString().trim() ?? '';
+          final message = error['message']?.toString().trim() ?? '';
+          final fields = [type, code, message]
+              .where((item) => item.isNotEmpty)
+              .join(' — ');
+          return _truncate(fields, 300);
+        }
+      }
+    } on Object {
+      // Deliberately do not include a raw body: a gateway may echo source code.
+    }
+    return '';
   }
+
+  String _safeHost(String value) => Uri.tryParse(value)?.host ?? '<invalid-url>';
+
+  String _truncate(String value, int limit) =>
+      value.length <= limit ? value : '${value.substring(0, limit)}…';
 
   void dispose() => _client.close();
 }

@@ -1,9 +1,42 @@
-# CodeKey Android 0.2.0
+# Changelog
 
-- Android-only Flutter package; iOS runner removed.
-- Added continuous discovery explanation for the button-free ESP32 firmware.
-- Authentication uses the per-device setup key; a correctly authenticated new phone may replace the former client ID.
-- Updated Android BLE permission handling for Android 11 and older and Android 12+.
-- Android bootstrap enforces minSdk 24, adds camera/BLE permissions, Chinese ML Kit OCR model and optional release signing.
-- Added root `BUILD_APK.bat` and `BUILD_APK.sh` wrappers.
-- Retained the approved premium dark conversation UI, four interface languages, multiple OCR screenshots, local DLP and strict JSON LLM response.
+## 0.3.0+3
+
+### Платформы
+
+- Возвращена единая кодовая база Android/iOS.
+- Добавлен генератор обоих runner-проектов.
+- Добавлены отдельные Android и iOS build scripts.
+- iOS target установлен в 15.5, armv7 исключён.
+
+### Камера и OCR
+
+- Миниатюра появляется сразу после фотографирования.
+- OCR запускается после добавления миниатюры и не блокирует её отображение.
+- Добавлены состояния queued/processing/done/failed и прогресс.
+- Добавлено удаление снимка крестиком.
+- Добавлены повтор OCR и ручное редактирование после ошибки.
+- Добавлена обработка `ImagePicker.retrieveLostData()`.
+- Улучшены проверки отсутствующего и пустого файла.
+
+### Настройки
+
+- Язык интерфейса применяется сразу.
+- Кнопка «Сохранить» возвращает на главный экран.
+- USB-идентификация скрыта до подключения и авторизации ESP32.
+- Поиск BLE теперь даёт видимый результат или ошибку.
+- Раскладки стали настраиваемым списком.
+- Иконка раскладки на главном экране переключает следующий профиль.
+
+### API
+
+- Добавлен отдельный DeepSeek API provider.
+- DeepSeek использует JSON output и non-thinking mode для структурированного результата.
+- Операционная система, редактор и язык программирования в API payload не добавляются.
+
+### Диагностика
+
+- Добавлен ротируемый локальный JSONL-журнал.
+- Логируются этапы запуска, camera/OCR, BLE, DLP, API, job compile и HID-печати.
+- Добавлен экспорт журнала через Android/iOS share sheet.
+- Содержимое кода, запросов и секреты редактируются или исключаются.

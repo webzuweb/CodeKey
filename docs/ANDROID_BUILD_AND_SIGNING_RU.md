@@ -1,47 +1,32 @@
-# Сборка и подпись Android APK
+# Сборка и подпись CodeKey для Android
 
-## 1. Подготовка проекта
+## Требования
 
-Установите Flutter 3.44 или новее (Dart 3.12 или новее) и Android Studio, затем из корня проекта выполните:
+- Flutter 3.38.1 или новее;
+- Dart 3.10 или новее;
+- Android Studio и Android SDK;
+- Java 17;
+- Python 3.
 
-```bash
-python tool/bootstrap_android.py
-```
-
-Скрипт создаёт только Android runner, добавляет разрешения камеры/BLE/Интернета, локальную китайскую модель ML Kit и поддержку пользовательской release-подписи.
-
-## 2. Тестовая сборка
-
-Windows:
+## Генерация Android/iOS runner
 
 ```bat
-tool\build_apk.bat
+python tool\bootstrap_platforms.py
 ```
 
-Linux/macOS:
+## Создание upload keystore
 
-```bash
-./tool/build_apk.sh
+```bat
+keytool -genkeypair -v ^
+  -keystore upload-keystore.jks ^
+  -storetype JKS ^
+  -keyalg RSA ^
+  -keysize 2048 ^
+  -validity 10000 ^
+  -alias upload
 ```
 
-Результат:
-
-```text
-build/app/outputs/flutter-apk/app-release.apk
-```
-
-Пока `android/key.properties` отсутствует, шаблон использует debug key только для тестовой сборки.
-
-## 3. Создание собственного ключа
-
-Пример:
-
-```bash
-keytool -genkey -v -keystore upload-keystore.jks -storetype JKS \
-  -keyalg RSA -keysize 2048 -validity 10000 -alias upload
-```
-
-Скопируйте шаблон:
+Скопируйте:
 
 ```text
 android/key.properties.example
@@ -53,7 +38,7 @@ android/key.properties.example
 android/key.properties
 ```
 
-и укажите:
+и заполните:
 
 ```properties
 storePassword=ВАШ_ПАРОЛЬ
@@ -62,12 +47,22 @@ keyAlias=upload
 storeFile=../upload-keystore.jks
 ```
 
-Повторно выполните сборку. Не добавляйте `key.properties`, `.jks` и пароли в публичный репозиторий.
+Не добавляйте `.jks` и `key.properties` в публичный репозиторий.
 
-## 4. APK по архитектурам
+## Сборка
 
-При необходимости:
+```bat
+BUILD_ANDROID.bat
+```
 
-```bash
-flutter build apk --release --split-per-abi
+Результат:
+
+```text
+build\app\outputs\flutter-apk\app-release.apk
+```
+
+Для Google Play:
+
+```bat
+flutter build appbundle --release
 ```

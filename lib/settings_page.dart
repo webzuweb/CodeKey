@@ -1,5 +1,7 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'app_controller.dart';
 import 'controller_scope.dart';
@@ -18,11 +20,14 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _initialized = false;
   bool _showApiKey = false;
   bool _saving = false;
+  bool _hasScanned = false;
+  bool _sharingLogs = false;
 
   late InterfaceLanguage _language;
   late WorkstationOs _os;
   late EditorProfile _editor;
-  late KeyboardLayoutProfile _layout;
+  late List<KeyboardLayoutOption> _keyboardLayouts;
+  late String _activeLayoutId;
   late double _speed;
   late bool _humanized;
   late ExternalApiProvider _apiProvider;
@@ -47,7 +52,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _language = settings.language;
     _os = settings.os;
     _editor = settings.editor;
-    _layout = settings.layout;
+    _keyboardLayouts = List<KeyboardLayoutOption>.from(settings.keyboardLayouts);
+    _activeLayoutId = settings.activeKeyboardLayoutId;
     _speed = settings.charactersPerSecond.toDouble();
     _humanized = settings.humanized;
     _apiProvider = settings.apiProvider;
@@ -97,7 +103,11 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton.icon(
             onPressed: _saving ? null : () => _save(context, controller),
             icon: _saving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.check),
             label: Text(strings.t('save')),
           ),
@@ -120,15 +130,34 @@ class _SettingsPageState extends State<SettingsPage> {
               title: strings.t('interface'),
               children: [
                 DropdownButtonFormField<InterfaceLanguage>(
+                  key: ValueKey('language-${_language.name}'),
                   initialValue: _language,
-                  decoration: InputDecoration(labelText: strings.t('interfaceLanguage')),
+                  decoration: InputDecoration(
+                    labelText: strings.t('interfaceLanguage'),
+                  ),
                   items: const [
-                    DropdownMenuItem(value: InterfaceLanguage.ru, child: Text('Русский')),
-                    DropdownMenuItem(value: InterfaceLanguage.en, child: Text('English')),
-                    DropdownMenuItem(value: InterfaceLanguage.es, child: Text('Español')),
-                    DropdownMenuItem(value: InterfaceLanguage.zh, child: Text('简体中文')),
+                    DropdownMenuItem(
+                      value: InterfaceLanguage.ru,
+                      child: Text('Русский'),
+                    ),
+                    DropdownMenuItem(
+                      value: InterfaceLanguage.en,
+                      child: Text('English'),
+                    ),
+                    DropdownMenuItem(
+                      value: InterfaceLanguage.es,
+                      child: Text('Español'),
+                    ),
+                    DropdownMenuItem(
+                      value: InterfaceLanguage.zh,
+                      child: Text('简体中文'),
+                    ),
                   ],
-                  onChanged: (value) => setState(() => _language = value ?? _language),
+                  onChanged: (value) async {
+                    if (value == null || value == _language) return;
+                    setState(() => _language = value);
+                    await controller.updateInterfaceLanguage(value);
+                  },
                 ),
               ],
             ),
@@ -138,9 +167,16 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 DropdownButtonFormField<WorkstationOs>(
                   initialValue: _os,
-                  decoration: InputDecoration(labelText: strings.t('operatingSystem')),
+                  decoration: InputDecoration(
+                    labelText: strings.t('operatingSystem'),
+                  ),
                   items: WorkstationOs.values
-                      .map((value) => DropdownMenuItem(value: value, child: Text(_osLabel(value))))
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(_osLabel(value)),
+                        ),
+                      )
                       .toList(growable: false),
                   onChanged: (value) => setState(() => _os = value ?? _os),
                 ),
@@ -149,24 +185,117 @@ class _SettingsPageState extends State<SettingsPage> {
                   initialValue: _editor,
                   decoration: InputDecoration(labelText: strings.t('editor')),
                   items: EditorProfile.values
-                      .map((value) => DropdownMenuItem(value: value, child: Text(_editorLabel(value, strings))))
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(_editorLabel(value, strings)),
+                        ),
+                      )
                       .toList(growable: false),
-                  onChanged: (value) => setState(() => _editor = value ?? _editor),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<KeyboardLayoutProfile>(
-                  initialValue: _layout,
-                  decoration: InputDecoration(labelText: strings.t('keyboardLayout')),
-                  items: const [
-                    DropdownMenuItem(value: KeyboardLayoutProfile.enUs, child: Text('English — US (EN-US)')),
-                    DropdownMenuItem(value: KeyboardLayoutProfile.enGb, child: Text('English — UK (EN-GB)')),
-                  ],
-                  onChanged: (value) => setState(() => _layout = value ?? _layout),
+                  onChanged: (value) =>
+                      setState(() => _editor = value ?? _editor),
                 ),
               ],
             ),
             _SettingsSection(
               icon: Icons.keyboard_alt_outlined,
+              title: strings.t('keyboardLayouts'),
+              children: [
+                DropdownButtonFormField<String>(
+                  key: ValueKey('layout-$_activeLayoutId-${_keyboardLayouts.length}'),
+                  initialValue: _activeLayoutId,
+                  decoration: InputDecoration(
+                    labelText: strings.t('activeKeyboardLayout'),
+                  ),
+                  items: _keyboardLayouts
+                      .map(
+                        (layout) => DropdownMenuItem(
+                          value: layout.id,
+                          child: Text('${layout.code} — ${layout.name}'),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) {
+                    if (value != null) setState(() => _activeLayoutId = value);
+                  },
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  strings.t('layoutHelp'),
+                  style: const TextStyle(
+                    color: CodeKeyTheme.muted,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._keyboardLayouts.map(
+                  (layout) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.fromLTRB(13, 9, 7, 9),
+                    decoration: BoxDecoration(
+                      color: CodeKeyTheme.surfaceHigh,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: layout.id == _activeLayoutId
+                            ? CodeKeyTheme.primary
+                            : CodeKeyTheme.border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: CodeKeyTheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            layout.code,
+                            style: const TextStyle(
+                              color: CodeKeyTheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(layout.name),
+                              Text(
+                                _baseLayoutLabel(layout.baseProfile),
+                                style: const TextStyle(
+                                  color: CodeKeyTheme.muted,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!layout.builtIn)
+                          IconButton(
+                            tooltip: strings.t('deleteLayout'),
+                            onPressed: () => _deleteLayout(layout),
+                            icon: const Icon(Icons.close, size: 19),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _addLayout,
+                  icon: const Icon(Icons.add),
+                  label: Text(strings.t('addLayout')),
+                ),
+              ],
+            ),
+            _SettingsSection(
+              icon: Icons.speed_outlined,
               title: strings.t('typing'),
               children: [
                 Text(strings.t('typingSpeed', {'value': _speed.round()})),
@@ -191,19 +320,26 @@ class _SettingsPageState extends State<SettingsPage> {
               title: strings.t('api'),
               children: [
                 DropdownButtonFormField<ExternalApiProvider>(
+                  key: ValueKey('provider-${_apiProvider.name}'),
                   initialValue: _apiProvider,
-                  decoration: InputDecoration(labelText: strings.t('apiProvider')),
-                  items: const [
-                    DropdownMenuItem(
+                  decoration: InputDecoration(
+                    labelText: strings.t('apiProvider'),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
                       value: ExternalApiProvider.openAiCompatible,
                       child: Text('OpenAI-compatible'),
                     ),
                     DropdownMenuItem(
+                      value: ExternalApiProvider.deepSeek,
+                      child: Text(strings.t('deepSeekApi')),
+                    ),
+                    const DropdownMenuItem(
                       value: ExternalApiProvider.anthropic,
                       child: Text('Anthropic Messages API'),
                     ),
                   ],
-                  onChanged: (value) => setState(() => _apiProvider = value ?? _apiProvider),
+                  onChanged: _onProviderChanged,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -230,9 +366,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: InputDecoration(
                     labelText: strings.t('apiKey'),
                     suffixIcon: IconButton(
-                      tooltip: strings.t(_showApiKey ? 'hideApiKey' : 'showApiKey'),
-                      onPressed: () => setState(() => _showApiKey = !_showApiKey),
-                      icon: Icon(_showApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      tooltip: strings.t(
+                        _showApiKey ? 'hideApiKey' : 'showApiKey',
+                      ),
+                      onPressed: () =>
+                          setState(() => _showApiKey = !_showApiKey),
+                      icon: Icon(
+                        _showApiKey
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
                     ),
                   ),
                 ),
@@ -241,7 +384,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   controller: _timeout,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(labelText: strings.t('apiTimeout')),
+                  decoration: InputDecoration(
+                    labelText: strings.t('apiTimeout'),
+                  ),
                 ),
               ],
             ),
@@ -276,12 +421,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.bluetooth_searching, color: CodeKeyTheme.primary),
+                      const Icon(
+                        Icons.bluetooth_searching,
+                        color: CodeKeyTheme.primary,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           strings.t('deviceDiscoveryHint'),
-                          style: const TextStyle(color: CodeKeyTheme.muted, height: 1.4),
+                          style: const TextStyle(
+                            color: CodeKeyTheme.muted,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],
@@ -300,14 +451,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: controller.scanning ? null : () => _scan(controller),
+                        onPressed: controller.scanning
+                            ? null
+                            : () => _scan(controller),
                         icon: controller.scanning
-                            ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2))
+                            ? const SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
                             : const Icon(Icons.radar),
-                        label: Text(strings.t(controller.scanning ? 'scanning' : 'scan')),
+                        label: Text(
+                          strings.t(controller.scanning ? 'scanning' : 'scan'),
+                        ),
                       ),
                     ),
-                    if (controller.deviceStatus.connectionState != CodeKeyConnectionState.disconnected) ...[
+                    if (controller.deviceStatus.connectionState !=
+                        CodeKeyConnectionState.disconnected) ...[
                       const SizedBox(width: 12),
                       OutlinedButton(
                         onPressed: controller.disconnectDevice,
@@ -316,9 +476,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ],
                 ),
-                if (!controller.scanning && controller.discoveredDevices.isEmpty) ...[
+                if (_hasScanned &&
+                    !controller.scanning &&
+                    controller.discoveredDevices.isEmpty) ...[
                   const SizedBox(height: 10),
-                  Text(strings.t('noDevices'), style: const TextStyle(color: CodeKeyTheme.muted)),
+                  Text(
+                    strings.t('noDevices'),
+                    style: const TextStyle(color: CodeKeyTheme.muted),
+                  ),
                 ],
                 if (controller.discoveredDevices.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -344,45 +509,122 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ],
             ),
+            if (controller.deviceStatus.isReady)
+              _SettingsSection(
+                icon: Icons.usb_rounded,
+                title: strings.t('usbIdentity'),
+                children: [
+                  _UsbWarning(text: strings.t('usbWarning')),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _productPreset(_product.text),
+                    decoration: InputDecoration(
+                      labelText: strings.t('productPreset'),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'CodeKey Keyboard',
+                        child: Text('CodeKey Keyboard'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 'Generic USB Keyboard',
+                        child: Text('Generic USB Keyboard'),
+                      ),
+                      const DropdownMenuItem(
+                        value: 'USB HID Keyboard',
+                        child: Text('USB HID Keyboard'),
+                      ),
+                      DropdownMenuItem(
+                        value: '__custom__',
+                        child: Text(strings.t('custom')),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null && value != '__custom__') {
+                        _product.text = value;
+                      }
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _HexField(
+                          controller: _vid,
+                          label: strings.t('vid'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _HexField(
+                          controller: _pid,
+                          label: strings.t('pid'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _manufacturer,
+                    decoration: InputDecoration(
+                      labelText: strings.t('manufacturer'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _product,
+                    decoration: InputDecoration(
+                      labelText: strings.t('productName'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _serial,
+                    decoration: InputDecoration(
+                      labelText: strings.t('serialNumber'),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: () => _applyUsb(context, controller),
+                    icon: const Icon(Icons.restart_alt),
+                    label: Text(strings.t('applyUsb')),
+                  ),
+                ],
+              ),
             _SettingsSection(
-              icon: Icons.usb_rounded,
-              title: strings.t('usbIdentity'),
+              icon: Icons.bug_report_outlined,
+              title: strings.t('diagnostics'),
               children: [
-                _UsbWarning(text: strings.t('usbWarning')),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _productPreset(_product.text),
-                  decoration: InputDecoration(labelText: strings.t('productPreset')),
-                  items: [
-                    const DropdownMenuItem(value: 'CodeKey Keyboard', child: Text('CodeKey Keyboard')),
-                    const DropdownMenuItem(value: 'Generic USB Keyboard', child: Text('Generic USB Keyboard')),
-                    const DropdownMenuItem(value: 'USB HID Keyboard', child: Text('USB HID Keyboard')),
-                    DropdownMenuItem(value: '__custom__', child: Text(strings.t('custom'))),
-                  ],
-                  onChanged: (value) {
-                    if (value != null && value != '__custom__') _product.text = value;
-                    setState(() {});
-                  },
+                Text(
+                  strings.t('diagnosticsHint'),
+                  style: const TextStyle(
+                    color: CodeKeyTheme.muted,
+                    height: 1.45,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _HexField(controller: _vid, label: strings.t('vid'))),
-                    const SizedBox(width: 12),
-                    Expanded(child: _HexField(controller: _pid, label: strings.t('pid'))),
-                  ],
+                Builder(
+                  builder: (buttonContext) => FilledButton.icon(
+                    onPressed: _sharingLogs
+                        ? null
+                        : () => _shareDiagnostics(buttonContext, controller),
+                    icon: _sharingLogs
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.ios_share_outlined),
+                    label: Text(strings.t('exportLogs')),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextField(controller: _manufacturer, decoration: InputDecoration(labelText: strings.t('manufacturer'))),
-                const SizedBox(height: 12),
-                TextField(controller: _product, decoration: InputDecoration(labelText: strings.t('productName'))),
-                const SizedBox(height: 12),
-                TextField(controller: _serial, decoration: InputDecoration(labelText: strings.t('serialNumber'))),
-                const SizedBox(height: 14),
-                FilledButton.icon(
-                  onPressed: controller.deviceStatus.isReady ? () => _applyUsb(context, controller) : null,
-                  icon: const Icon(Icons.restart_alt),
-                  label: Text(strings.t('applyUsb')),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _clearLogs(controller),
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  label: Text(strings.t('clearLogs')),
                 ),
               ],
             ),
@@ -396,14 +638,17 @@ class _SettingsPageState extends State<SettingsPage> {
     language: _language,
     os: _os,
     editor: _editor,
-    layout: _layout,
+    keyboardLayouts: List<KeyboardLayoutOption>.unmodifiable(_keyboardLayouts),
+    activeKeyboardLayoutId: _activeLayoutId,
     charactersPerSecond: _speed.round(),
     humanized: _humanized,
     apiProvider: _apiProvider,
     apiBaseUrl: _baseUrl.text.trim(),
     apiModel: _model.text.trim(),
     apiKey: _apiKey.text.trim(),
-    apiTimeoutSeconds: (int.tryParse(_timeout.text) ?? 90).clamp(10, 600).toInt(),
+    apiTimeoutSeconds: (int.tryParse(_timeout.text) ?? 90)
+        .clamp(10, 600)
+        .toInt(),
     corporateTerms: _corporateTerms.text.trim(),
     setupKey: _setupKey.text.trim(),
     usbVid: _vid.text.trim().toUpperCase(),
@@ -413,14 +658,19 @@ class _SettingsPageState extends State<SettingsPage> {
     usbSerial: _serial.text.trim(),
   );
 
-  Future<void> _save(BuildContext context, CodeKeyController controller) async {
+  Future<void> _save(
+    BuildContext context,
+    CodeKeyController controller,
+  ) async {
     setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final savedText = context.strings.t('saved');
     try {
-      _validateUsb();
+      if (controller.deviceStatus.isReady) _validateUsb();
       await controller.updateSettings(_collect(controller.settings));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.strings.t('saved'))));
-      }
+      if (!context.mounted) return;
+      Navigator.of(context).pop(true);
+      messenger.showSnackBar(SnackBar(content: Text(savedText)));
     } on Object catch (error) {
       if (context.mounted) _showSettingsError(context, error);
     } finally {
@@ -430,23 +680,47 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _scan(CodeKeyController controller) async {
     try {
-      await controller.scanDevices();
+      final devices = await controller.scanDevices();
+      if (!mounted) return;
+      setState(() => _hasScanned = true);
+      final key = devices.isEmpty ? 'noDevices' : 'devicesFound';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.strings.t(key, {'count': devices.length}),
+          ),
+        ),
+      );
     } on Object catch (error) {
-      if (mounted) _showSettingsError(context, error);
+      if (mounted) {
+        setState(() => _hasScanned = true);
+        _showSettingsError(context, error);
+      }
     }
   }
 
-  Future<void> _connect(CodeKeyController controller, DiscoveredCodeKey device) async {
+  Future<void> _connect(
+    CodeKeyController controller,
+    DiscoveredCodeKey device,
+  ) async {
     try {
       final settings = _collect(controller.settings);
       await controller.updateSettings(settings);
       await controller.connectDevice(device, settings.setupKey);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.strings.t('connected'))),
+        );
+      }
     } on Object catch (error) {
       if (mounted) _showSettingsError(context, error);
     }
   }
 
-  Future<void> _applyUsb(BuildContext context, CodeKeyController controller) async {
+  Future<void> _applyUsb(
+    BuildContext context,
+    CodeKeyController controller,
+  ) async {
     try {
       _validateUsb();
       await controller.updateSettings(_collect(controller.settings));
@@ -461,27 +735,232 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _shareDiagnostics(
+    BuildContext buttonContext,
+    CodeKeyController controller,
+  ) async {
+    setState(() => _sharingLogs = true);
+    try {
+      final file = await controller.exportDiagnostics();
+      if (!mounted) return;
+      final box = buttonContext.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(
+        ShareParams(
+          title: 'CodeKey diagnostics',
+          subject: 'CodeKey diagnostics',
+          text: context.strings.t('diagnosticsShareText'),
+          files: [XFile(file.path, mimeType: 'application/x-ndjson')],
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } on Object catch (error) {
+      if (mounted) _showSettingsError(context, error);
+    } finally {
+      if (mounted) setState(() => _sharingLogs = false);
+    }
+  }
+
+  Future<void> _clearLogs(CodeKeyController controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.strings.t('clearLogs')),
+        content: Text(dialogContext.strings.t('clearLogsConfirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(dialogContext.strings.t('close')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(dialogContext.strings.t('delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await controller.clearDiagnostics();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.strings.t('logsCleared'))),
+      );
+    }
+  }
+
+  void _onProviderChanged(ExternalApiProvider? value) {
+    if (value == null) return;
+    setState(() {
+      final previous = _apiProvider;
+      _apiProvider = value;
+      switch (value) {
+        case ExternalApiProvider.deepSeek:
+          _baseUrl.text = 'https://api.deepseek.com';
+          if (_model.text.trim().isEmpty ||
+              previous != ExternalApiProvider.deepSeek) {
+            _model.text = 'deepseek-v4-flash';
+          }
+          break;
+        case ExternalApiProvider.openAiCompatible:
+          if (previous == ExternalApiProvider.deepSeek &&
+              _baseUrl.text.contains('api.deepseek.com')) {
+            _baseUrl.text = 'https://api.openai.com/v1';
+            _model.clear();
+          }
+          break;
+        case ExternalApiProvider.anthropic:
+          if (previous == ExternalApiProvider.deepSeek &&
+              _baseUrl.text.contains('api.deepseek.com')) {
+            _baseUrl.text = 'https://api.anthropic.com/v1';
+            _model.clear();
+          }
+          break;
+      }
+    });
+  }
+
+  Future<void> _addLayout() async {
+    final name = TextEditingController();
+    final code = TextEditingController();
+    var baseProfile = KeyboardLayoutProfile.enUs;
+    final result = await showDialog<KeyboardLayoutOption>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(dialogContext.strings.t('addLayout')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: name,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: dialogContext.strings.t('layoutName'),
+                    hintText: 'Русская — Windows',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: code,
+                  maxLength: 10,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    labelText: dialogContext.strings.t('layoutCode'),
+                    hintText: 'RU',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<KeyboardLayoutProfile>(
+                  initialValue: baseProfile,
+                  decoration: InputDecoration(
+                    labelText: dialogContext.strings.t('baseLayout'),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: KeyboardLayoutProfile.enUs,
+                      child: Text('English — US'),
+                    ),
+                    DropdownMenuItem(
+                      value: KeyboardLayoutProfile.enGb,
+                      child: Text('English — UK'),
+                    ),
+                  ],
+                  onChanged: (value) => setDialogState(
+                    () => baseProfile = value ?? baseProfile,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(dialogContext.strings.t('close')),
+            ),
+            FilledButton(
+              onPressed: () {
+                final cleanName = name.text.trim();
+                final cleanCode = code.text.trim().toUpperCase();
+                if (cleanName.isEmpty || cleanCode.isEmpty) return;
+                Navigator.pop(
+                  dialogContext,
+                  KeyboardLayoutOption(
+                    id: 'custom-${DateTime.now().microsecondsSinceEpoch}',
+                    code: cleanCode,
+                    name: cleanName,
+                    baseProfile: baseProfile,
+                  ),
+                );
+              },
+              child: Text(dialogContext.strings.t('add')),
+            ),
+          ],
+        ),
+      ),
+    );
+    name.dispose();
+    code.dispose();
+    if (result == null || !mounted) return;
+    if (_keyboardLayouts.any(
+      (item) => item.code.toUpperCase() == result.code.toUpperCase(),
+    )) {
+      _showSettingsError(context, const FormatException('layout_code_exists'));
+      return;
+    }
+    setState(() {
+      _keyboardLayouts = [..._keyboardLayouts, result];
+      _activeLayoutId = result.id;
+    });
+  }
+
+  void _deleteLayout(KeyboardLayoutOption layout) {
+    if (layout.builtIn || _keyboardLayouts.length <= 1) return;
+    setState(() {
+      _keyboardLayouts = _keyboardLayouts
+          .where((item) => item.id != layout.id)
+          .toList(growable: false);
+      if (_activeLayoutId == layout.id) {
+        _activeLayoutId = _keyboardLayouts.first.id;
+      }
+    });
+  }
+
   void _validateUsb() {
     final hex = RegExp(r'^[0-9A-Fa-f]{4}$');
     if (!hex.hasMatch(_vid.text.trim()) || !hex.hasMatch(_pid.text.trim())) {
-      throw const FormatException('VID and PID must contain exactly four hexadecimal characters.');
+      throw const FormatException('invalid_vid_pid');
     }
     if (_vid.text.trim().toUpperCase() == '0000' ||
         _pid.text.trim().toUpperCase() == '0000') {
-      throw const FormatException('VID and PID must be non-zero.');
+      throw const FormatException('zero_vid_pid');
     }
-    if (_manufacturer.text.trim().isEmpty || _product.text.trim().isEmpty || _serial.text.trim().isEmpty) {
-      throw const FormatException('USB text fields must not be empty.');
+    if (_manufacturer.text.trim().isEmpty ||
+        _product.text.trim().isEmpty ||
+        _serial.text.trim().isEmpty) {
+      throw const FormatException('empty_usb_fields');
     }
-    if (_manufacturer.text.length > 31 || _product.text.length > 31 || _serial.text.length > 31) {
-      throw const FormatException('USB text fields are limited to 31 characters.');
+    if (_manufacturer.text.length > 31 ||
+        _product.text.length > 31 ||
+        _serial.text.length > 31) {
+      throw const FormatException('usb_fields_too_long');
     }
   }
 
   String _productPreset(String value) {
-    const known = {'CodeKey Keyboard', 'Generic USB Keyboard', 'USB HID Keyboard'};
+    const known = {
+      'CodeKey Keyboard',
+      'Generic USB Keyboard',
+      'USB HID Keyboard',
+    };
     return known.contains(value) ? value : '__custom__';
   }
+
+  String _baseLayoutLabel(KeyboardLayoutProfile profile) => switch (profile) {
+    KeyboardLayoutProfile.enUs => 'USB map: English — US',
+    KeyboardLayoutProfile.enGb => 'USB map: English — UK',
+  };
 
   String _osLabel(WorkstationOs os) => switch (os) {
     WorkstationOs.windows => 'Windows',
@@ -489,7 +968,10 @@ class _SettingsPageState extends State<SettingsPage> {
     WorkstationOs.macos => 'macOS',
   };
 
-  String _editorLabel(EditorProfile editor, CodeKeyLocalizations strings) => switch (editor) {
+  String _editorLabel(
+    EditorProfile editor,
+    CodeKeyLocalizations strings,
+  ) => switch (editor) {
     EditorProfile.generic => strings.t('genericEditor'),
     EditorProfile.vscode => 'Visual Studio Code',
     EditorProfile.jetBrains => 'JetBrains IDE',
@@ -537,7 +1019,12 @@ class _SettingsSection extends StatelessWidget {
                 child: Icon(icon, color: CodeKeyTheme.primary),
               ),
               const SizedBox(width: 11),
-              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
               if (trailing != null) trailing!,
             ],
           ),
@@ -559,15 +1046,22 @@ class _ConnectionIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: (ready ? CodeKeyTheme.success : CodeKeyTheme.muted).withValues(alpha: 0.12),
+        color: (ready ? CodeKeyTheme.success : CodeKeyTheme.muted)
+            .withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(radius: 4, backgroundColor: ready ? CodeKeyTheme.success : CodeKeyTheme.muted),
+          CircleAvatar(
+            radius: 4,
+            backgroundColor: ready ? CodeKeyTheme.success : CodeKeyTheme.muted,
+          ),
           const SizedBox(width: 6),
-          Text(context.strings.t(ready ? 'connected' : 'disconnected'), style: const TextStyle(fontSize: 12)),
+          Text(
+            context.strings.t(ready ? 'connected' : 'disconnected'),
+            style: const TextStyle(fontSize: 12),
+          ),
         ],
       ),
     );
@@ -605,14 +1099,22 @@ class _UsbWarning extends StatelessWidget {
       decoration: BoxDecoration(
         color: CodeKeyTheme.warning.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CodeKeyTheme.warning.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: CodeKeyTheme.warning.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: CodeKeyTheme.warning, size: 20),
+          const Icon(
+            Icons.info_outline,
+            color: CodeKeyTheme.warning,
+            size: 20,
+          ),
           const SizedBox(width: 9),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 12.5))),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 12.5)),
+          ),
         ],
       ),
     );
@@ -620,7 +1122,12 @@ class _UsbWarning extends StatelessWidget {
 }
 
 void _showSettingsError(BuildContext context, Object error) {
+  final code = error.toString().replaceFirst(RegExp(r'^[^:]+:\s*'), '');
+  final translated = context.strings.t(code);
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(error.toString()), backgroundColor: CodeKeyTheme.danger),
+    SnackBar(
+      content: Text(translated == code ? code : translated),
+      backgroundColor: CodeKeyTheme.danger,
+    ),
   );
 }

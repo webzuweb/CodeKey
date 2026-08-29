@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 const _unset = Object();
 
 enum InterfaceLanguage { ru, en, es, zh }
-enum ExternalApiProvider { openAiCompatible, anthropic }
+enum ExternalApiProvider { openAiCompatible, deepSeek, anthropic }
 enum WorkstationOs { windows, linux, macos }
 enum EditorProfile { generic, vscode, jetBrains, visualStudio, androidStudio, xcode }
 enum KeyboardLayoutProfile { enUs, enGb }
@@ -33,12 +33,77 @@ enum SemanticAction {
 }
 
 @immutable
+class KeyboardLayoutOption {
+  const KeyboardLayoutOption({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.baseProfile,
+    this.builtIn = false,
+  });
+
+  final String id;
+  final String code;
+  final String name;
+  final KeyboardLayoutProfile baseProfile;
+  final bool builtIn;
+
+  String get label => code.trim().isEmpty ? name : code.toUpperCase();
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'code': code,
+    'name': name,
+    'baseProfile': baseProfile.name,
+    'builtIn': builtIn,
+  };
+
+  static KeyboardLayoutOption? fromJson(Object? value) {
+    if (value is! Map) return null;
+    final map = Map<String, Object?>.from(value);
+    final id = map['id'] as String? ?? '';
+    final code = map['code'] as String? ?? '';
+    final name = map['name'] as String? ?? '';
+    final profile = _enumByName(
+      KeyboardLayoutProfile.values,
+      map['baseProfile'],
+    );
+    if (id.trim().isEmpty || name.trim().isEmpty || profile == null) return null;
+    return KeyboardLayoutOption(
+      id: id.trim(),
+      code: code.trim().isEmpty ? name.trim() : code.trim().toUpperCase(),
+      name: name.trim(),
+      baseProfile: profile,
+      builtIn: map['builtIn'] as bool? ?? false,
+    );
+  }
+}
+
+const defaultKeyboardLayouts = <KeyboardLayoutOption>[
+  KeyboardLayoutOption(
+    id: 'en-us',
+    code: 'EN-US',
+    name: 'English — US',
+    baseProfile: KeyboardLayoutProfile.enUs,
+    builtIn: true,
+  ),
+  KeyboardLayoutOption(
+    id: 'en-gb',
+    code: 'EN-GB',
+    name: 'English — UK',
+    baseProfile: KeyboardLayoutProfile.enGb,
+    builtIn: true,
+  ),
+];
+
+@immutable
 class AppSettings {
   const AppSettings({
     this.language = InterfaceLanguage.ru,
     this.os = WorkstationOs.windows,
     this.editor = EditorProfile.vscode,
-    this.layout = KeyboardLayoutProfile.enUs,
+    this.keyboardLayouts = defaultKeyboardLayouts,
+    this.activeKeyboardLayoutId = 'en-us',
     this.charactersPerSecond = 8,
     this.humanized = true,
     this.apiProvider = ExternalApiProvider.openAiCompatible,
@@ -60,7 +125,8 @@ class AppSettings {
   final InterfaceLanguage language;
   final WorkstationOs os;
   final EditorProfile editor;
-  final KeyboardLayoutProfile layout;
+  final List<KeyboardLayoutOption> keyboardLayouts;
+  final String activeKeyboardLayoutId;
   final int charactersPerSecond;
   final bool humanized;
   final ExternalApiProvider apiProvider;
@@ -78,11 +144,21 @@ class AppSettings {
   final String usbProduct;
   final String usbSerial;
 
+  KeyboardLayoutOption get activeKeyboardLayout {
+    for (final layout in keyboardLayouts) {
+      if (layout.id == activeKeyboardLayoutId) return layout;
+    }
+    return keyboardLayouts.isNotEmpty ? keyboardLayouts.first : defaultKeyboardLayouts.first;
+  }
+
+  KeyboardLayoutProfile get layout => activeKeyboardLayout.baseProfile;
+
   AppSettings copyWith({
     InterfaceLanguage? language,
     WorkstationOs? os,
     EditorProfile? editor,
-    KeyboardLayoutProfile? layout,
+    List<KeyboardLayoutOption>? keyboardLayouts,
+    String? activeKeyboardLayoutId,
     int? charactersPerSecond,
     bool? humanized,
     ExternalApiProvider? apiProvider,
@@ -99,33 +175,46 @@ class AppSettings {
     String? usbManufacturer,
     String? usbProduct,
     String? usbSerial,
-  }) => AppSettings(
-    language: language ?? this.language,
-    os: os ?? this.os,
-    editor: editor ?? this.editor,
-    layout: layout ?? this.layout,
-    charactersPerSecond: charactersPerSecond ?? this.charactersPerSecond,
-    humanized: humanized ?? this.humanized,
-    apiProvider: apiProvider ?? this.apiProvider,
-    apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
-    apiModel: apiModel ?? this.apiModel,
-    apiKey: apiKey ?? this.apiKey,
-    apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
-    corporateTerms: corporateTerms ?? this.corporateTerms,
-    bleDeviceId: bleDeviceId ?? this.bleDeviceId,
-    bleDeviceName: bleDeviceName ?? this.bleDeviceName,
-    setupKey: setupKey ?? this.setupKey,
-    usbVid: usbVid ?? this.usbVid,
-    usbPid: usbPid ?? this.usbPid,
-    usbManufacturer: usbManufacturer ?? this.usbManufacturer,
-    usbProduct: usbProduct ?? this.usbProduct,
-    usbSerial: usbSerial ?? this.usbSerial,
-  );
+  }) {
+    final layouts = List<KeyboardLayoutOption>.unmodifiable(
+      keyboardLayouts ?? this.keyboardLayouts,
+    );
+    final requestedActive = activeKeyboardLayoutId ?? this.activeKeyboardLayoutId;
+    final resolvedActive = layouts.any((item) => item.id == requestedActive)
+        ? requestedActive
+        : (layouts.isNotEmpty ? layouts.first.id : defaultKeyboardLayouts.first.id);
+    return AppSettings(
+      language: language ?? this.language,
+      os: os ?? this.os,
+      editor: editor ?? this.editor,
+      keyboardLayouts: layouts.isEmpty ? defaultKeyboardLayouts : layouts,
+      activeKeyboardLayoutId: resolvedActive,
+      charactersPerSecond: charactersPerSecond ?? this.charactersPerSecond,
+      humanized: humanized ?? this.humanized,
+      apiProvider: apiProvider ?? this.apiProvider,
+      apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
+      apiModel: apiModel ?? this.apiModel,
+      apiKey: apiKey ?? this.apiKey,
+      apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
+      corporateTerms: corporateTerms ?? this.corporateTerms,
+      bleDeviceId: bleDeviceId ?? this.bleDeviceId,
+      bleDeviceName: bleDeviceName ?? this.bleDeviceName,
+      setupKey: setupKey ?? this.setupKey,
+      usbVid: usbVid ?? this.usbVid,
+      usbPid: usbPid ?? this.usbPid,
+      usbManufacturer: usbManufacturer ?? this.usbManufacturer,
+      usbProduct: usbProduct ?? this.usbProduct,
+      usbSerial: usbSerial ?? this.usbSerial,
+    );
+  }
 
   Map<String, Object?> toPersistedJson() => {
     'language': language.name,
     'os': os.name,
     'editor': editor.name,
+    'keyboardLayouts': keyboardLayouts.map((item) => item.toJson()).toList(growable: false),
+    'activeKeyboardLayoutId': activeKeyboardLayoutId,
+    // Keep the legacy field so older builds can still open the settings file.
     'layout': layout.name,
     'charactersPerSecond': charactersPerSecond,
     'humanized': humanized,
@@ -147,28 +236,53 @@ class AppSettings {
     Map<String, Object?> json, {
     required String apiKey,
     required String setupKey,
-  }) => AppSettings(
-    language: _enumByName(InterfaceLanguage.values, json['language']) ?? InterfaceLanguage.ru,
-    os: _enumByName(WorkstationOs.values, json['os']) ?? WorkstationOs.windows,
-    editor: _enumByName(EditorProfile.values, json['editor']) ?? EditorProfile.vscode,
-    layout: _enumByName(KeyboardLayoutProfile.values, json['layout']) ?? KeyboardLayoutProfile.enUs,
-    charactersPerSecond: (json['charactersPerSecond'] as num?)?.toInt() ?? 8,
-    humanized: json['humanized'] as bool? ?? true,
-    apiProvider: _enumByName(ExternalApiProvider.values, json['apiProvider']) ?? ExternalApiProvider.openAiCompatible,
-    apiBaseUrl: json['apiBaseUrl'] as String? ?? 'https://api.openai.com/v1',
-    apiModel: json['apiModel'] as String? ?? '',
-    apiKey: apiKey,
-    apiTimeoutSeconds: (json['apiTimeoutSeconds'] as num?)?.toInt() ?? 90,
-    corporateTerms: json['corporateTerms'] as String? ?? '',
-    bleDeviceId: json['bleDeviceId'] as String? ?? '',
-    bleDeviceName: json['bleDeviceName'] as String? ?? '',
-    setupKey: setupKey,
-    usbVid: json['usbVid'] as String? ?? '303A',
-    usbPid: json['usbPid'] as String? ?? '4001',
-    usbManufacturer: json['usbManufacturer'] as String? ?? 'PROVOLTA',
-    usbProduct: json['usbProduct'] as String? ?? 'CodeKey Keyboard',
-    usbSerial: json['usbSerial'] as String? ?? 'CK-000001',
-  );
+  }) {
+    final parsedLayouts = <KeyboardLayoutOption>[];
+    final rawLayouts = json['keyboardLayouts'];
+    if (rawLayouts is List) {
+      for (final value in rawLayouts) {
+        final parsed = KeyboardLayoutOption.fromJson(value);
+        if (parsed != null && !parsedLayouts.any((item) => item.id == parsed.id)) {
+          parsedLayouts.add(parsed);
+        }
+      }
+    }
+
+    var layouts = parsedLayouts;
+    var activeId = json['activeKeyboardLayoutId'] as String? ?? '';
+    if (layouts.isEmpty) {
+      final legacy = _enumByName(KeyboardLayoutProfile.values, json['layout']) ??
+          KeyboardLayoutProfile.enUs;
+      layouts = List<KeyboardLayoutOption>.from(defaultKeyboardLayouts);
+      activeId = legacy == KeyboardLayoutProfile.enGb ? 'en-gb' : 'en-us';
+    }
+    if (!layouts.any((item) => item.id == activeId)) activeId = layouts.first.id;
+
+    return AppSettings(
+      language: _enumByName(InterfaceLanguage.values, json['language']) ?? InterfaceLanguage.ru,
+      os: _enumByName(WorkstationOs.values, json['os']) ?? WorkstationOs.windows,
+      editor: _enumByName(EditorProfile.values, json['editor']) ?? EditorProfile.vscode,
+      keyboardLayouts: List<KeyboardLayoutOption>.unmodifiable(layouts),
+      activeKeyboardLayoutId: activeId,
+      charactersPerSecond: (json['charactersPerSecond'] as num?)?.toInt() ?? 8,
+      humanized: json['humanized'] as bool? ?? true,
+      apiProvider: _enumByName(ExternalApiProvider.values, json['apiProvider']) ??
+          ExternalApiProvider.openAiCompatible,
+      apiBaseUrl: json['apiBaseUrl'] as String? ?? 'https://api.openai.com/v1',
+      apiModel: json['apiModel'] as String? ?? '',
+      apiKey: apiKey,
+      apiTimeoutSeconds: (json['apiTimeoutSeconds'] as num?)?.toInt() ?? 90,
+      corporateTerms: json['corporateTerms'] as String? ?? '',
+      bleDeviceId: json['bleDeviceId'] as String? ?? '',
+      bleDeviceName: json['bleDeviceName'] as String? ?? '',
+      setupKey: setupKey,
+      usbVid: json['usbVid'] as String? ?? '303A',
+      usbPid: json['usbPid'] as String? ?? '4001',
+      usbManufacturer: json['usbManufacturer'] as String? ?? 'PROVOLTA',
+      usbProduct: json['usbProduct'] as String? ?? 'CodeKey Keyboard',
+      usbSerial: json['usbSerial'] as String? ?? 'CK-000001',
+    );
+  }
 
   String encodePersisted() => jsonEncode(toPersistedJson());
 }
@@ -311,7 +425,9 @@ class DeviceStatus {
   final int totalSteps;
 
   bool get isReady => connectionState == CodeKeyConnectionState.authenticated;
-  double get progress => totalSteps == 0 ? 0 : (completedSteps / totalSteps).clamp(0, 1).toDouble();
+  double get progress => totalSteps == 0
+      ? 0
+      : (completedSteps / totalSteps).clamp(0, 1).toDouble();
 
   DeviceStatus copyWith({
     CodeKeyConnectionState? connectionState,

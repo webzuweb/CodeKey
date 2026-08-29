@@ -1,169 +1,305 @@
 {
   "status": "PASS",
-  "checks": 79,
+  "checks": 80,
+  "flutterExecuted": false,
   "details": [
     {
-      "name": "pubspec name",
+      "name": "required file pubspec.yaml",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Dart SDK minimum",
+      "name": "required file lib/main.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Android-only source tree",
+      "name": "required file lib/app_logger.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file lib/app_controller.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file lib/ble_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file lib/ocr_service.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file lib/settings_page.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file lib/home_page.dart",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file tool/bootstrap_platforms.py",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file tool/build_android.bat",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file tool/build_ios.sh",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "required file docs/DIAGNOSTICS_RU.md",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "package version 0.3.0+3",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "Android and iOS description",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "ML Kit dependency",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "diagnostic share dependency",
       "result": "PASS",
       "detail": null
     },
     {
       "name": "localization ru key parity",
       "result": "PASS",
-      "detail": "101 keys"
+      "detail": "146 keys"
     },
     {
       "name": "localization en key parity",
       "result": "PASS",
-      "detail": "101 keys"
+      "detail": "146 keys"
     },
     {
       "name": "localization es key parity",
       "result": "PASS",
-      "detail": "101 keys"
+      "detail": "146 keys"
     },
     {
       "name": "localization zh key parity",
       "result": "PASS",
-      "detail": "101 keys"
+      "detail": "146 keys"
     },
     {
-      "name": "translation calls resolved",
+      "name": "direct localization calls resolved",
       "result": "PASS",
-      "detail": "85 direct keys"
+      "detail": []
     },
     {
-      "name": "BLE UUID parity",
-      "result": "PASS",
-      "detail": "6 UUIDs"
-    },
-    {
-      "name": "no hardware call pinMode(",
+      "name": "delimiter balance lib/app.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "no hardware call digitalRead(",
+      "name": "delimiter balance lib/app_controller.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "no hardware call digitalWrite(",
+      "name": "delimiter balance lib/app_logger.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "no hardware call analogWrite(",
+      "name": "delimiter balance lib/ble_service.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "no hardware pin constants",
+      "name": "delimiter balance lib/controller_scope.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "indefinite BLE advertising",
+      "name": "delimiter balance lib/dlp_service.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "advertising watchdog",
+      "name": "delimiter balance lib/home_page.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "auth timeout",
+      "name": "delimiter balance lib/job_protocol.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "auth failure disconnect",
+      "name": "delimiter balance lib/llm_service.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "disconnect releases HID",
+      "name": "delimiter balance lib/localization.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror Auth.cpp",
+      "name": "delimiter balance lib/main.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror Auth.h",
+      "name": "delimiter balance lib/models.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror BleServer.cpp",
+      "name": "delimiter balance lib/ocr_service.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror BleServer.h",
+      "name": "delimiter balance lib/settings_page.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror Crc32.cpp",
+      "name": "delimiter balance lib/settings_store.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror Crc32.h",
+      "name": "delimiter balance lib/theme.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror DeviceConfig.cpp",
+      "name": "delimiter balance test/deepseek_service_test.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror DeviceConfig.h",
+      "name": "delimiter balance test/dlp_service_test.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror HidEngine.cpp",
+      "name": "delimiter balance test/job_protocol_test.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror HidEngine.h",
+      "name": "delimiter balance test/llm_service_test.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror JobEngine.cpp",
+      "name": "delimiter balance test/settings_model_test.dart",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror JobEngine.h",
+      "name": "immediate screenshot insertion",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino mirror config",
+      "name": "lost camera data recovery",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Arduino main mirror",
+      "name": "OCR retry",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "screenshot delete cross",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "language applies immediately",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "DeepSeek provider",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "DeepSeek endpoint preset",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "DeepSeek strict JSON",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "layout cycle from header",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "custom layout management",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "visible BLE scan state",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "USB section gated by connection",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "save returns home",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "diagnostic logger",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "diagnostic share sheet",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "log sanitizer",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "platform generator Android+iOS",
+      "result": "PASS",
+      "detail": null
+    },
+    {
+      "name": "iOS ML Kit target",
       "result": "PASS",
       "detail": null
     },
@@ -178,7 +314,7 @@
       "detail": null
     },
     {
-      "name": "LLM payload excludes settings.layout",
+      "name": "LLM payload excludes activeKeyboardLayout",
       "result": "PASS",
       "detail": null
     },
@@ -198,204 +334,74 @@
       "detail": null
     },
     {
-      "name": "strict JSON response required",
+      "name": "bootstrap Android BLE permission",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "manifest BLE permission patch",
+      "name": "bootstrap Android camera permission",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "manifest camera permission patch",
+      "name": "bootstrap Android HTTPS only",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "manifest HTTPS-only patch",
+      "name": "bootstrap Android minSdk 24",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "minSdk patch",
+      "name": "bootstrap Android Chinese OCR",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "Chinese OCR model patch",
+      "name": "bootstrap Android signing",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "release signing patch",
+      "name": "bootstrap iOS target 15.5",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "key properties example",
+      "name": "bootstrap iOS Chinese OCR",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/llm_service.dart",
+      "name": "bootstrap iOS camera macro",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/home_page.dart",
+      "name": "bootstrap iOS Bluetooth macro",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/dlp_service.dart",
+      "name": "bootstrap iOS camera description",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/theme.dart",
+      "name": "bootstrap iOS Bluetooth description",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/job_protocol.dart",
+      "name": "bootstrap iOS photo description",
       "result": "PASS",
       "detail": null
     },
     {
-      "name": "delimiter balance codekey-android/lib/ocr_service.dart",
+      "name": "Python tools compile",
       "result": "PASS",
       "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/app.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/main.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/models.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/settings_page.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/settings_store.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/localization.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/controller_scope.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/ble_service.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/lib/app_controller.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/test/dlp_service_test.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/test/llm_service_test.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-android/test/job_protocol_test.dart",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/BleServer.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/Crc32.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/HidEngine.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/Auth.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/main.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/JobEngine.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/DeviceConfig.cpp",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/Auth.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/BleServer.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/Crc32.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/DeviceConfig.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/HidEngine.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "delimiter balance codekey-esp32/src/JobEngine.h",
-      "result": "PASS",
-      "detail": null
-    },
-    {
-      "name": "CRC32 compiled check vector",
-      "result": "PASS",
-      "detail": "CBF43926"
     }
   ]
 }

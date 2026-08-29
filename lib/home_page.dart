@@ -107,8 +107,16 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final strings = sheetContext.strings;
+        final errorCode = (item.error ?? 'ocrFailed')
+            .replaceFirst(RegExp(r'^[^:]+:\s*'), '')
+            .split(':')
+            .first
+            .trim();
+        final translatedError = strings.t(errorCode);
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
           child: _SheetSurface(
             child: SizedBox(
               height: MediaQuery.sizeOf(sheetContext).height * 0.78,
@@ -117,10 +125,16 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.document_scanner_outlined, color: CodeKeyTheme.primary),
+                      const Icon(
+                        Icons.document_scanner_outlined,
+                        color: CodeKeyTheme.primary,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(strings.t('editOcr'), style: Theme.of(sheetContext).textTheme.titleLarge),
+                        child: Text(
+                          strings.t('editOcr'),
+                          style: Theme.of(sheetContext).textTheme.titleLarge,
+                        ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(sheetContext),
@@ -128,6 +142,15 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+                  if (item.state == OcrState.failed) ...[
+                    const SizedBox(height: 10),
+                    _Notice(
+                      text: translatedError == errorCode
+                          ? strings.t('ocrFailedDetails')
+                          : translatedError,
+                      color: CodeKeyTheme.danger,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Expanded(
                     child: TextField(
@@ -136,21 +159,36 @@ class _HomePageState extends State<HomePage> {
                       maxLines: null,
                       minLines: null,
                       textAlignVertical: TextAlignVertical.top,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 14, height: 1.45),
-                      decoration: const InputDecoration(contentPadding: EdgeInsets.all(16)),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14,
+                        height: 1.45,
+                      ),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.all(16),
+                        hintText: strings.t('ocrManualHint'),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => Navigator.pop(sheetContext, 'delete'),
-                          icon: const Icon(Icons.delete_outline),
-                          label: Text(strings.t('delete')),
-                        ),
+                      IconButton.outlined(
+                        tooltip: strings.t('delete'),
+                        onPressed: () => Navigator.pop(sheetContext, 'delete'),
+                        icon: const Icon(Icons.delete_outline),
                       ),
-                      const SizedBox(width: 12),
+                      if (item.state == OcrState.failed) ...[
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(sheetContext, 'retry'),
+                            icon: const Icon(Icons.refresh),
+                            label: Text(strings.t('retryOcr')),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 9),
                       Expanded(
                         flex: 2,
                         child: FilledButton.icon(
@@ -170,8 +208,10 @@ class _HomePageState extends State<HomePage> {
     );
     if (action == 'save') controller.editOcr(item.id, editor.text);
     if (action == 'delete') await controller.removeScreenshot(item.id);
+    if (action == 'retry') await controller.retryOcr(item.id);
     editor.dispose();
   }
+
 }
 
 class _Header extends StatelessWidget {
@@ -215,9 +255,24 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _HeaderChip(
-            onTap: () => _openSettings(context),
+            onTap: () async {
+              final next = await controller.cycleKeyboardLayout();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    duration: const Duration(milliseconds: 900),
+                    content: Text(
+                      context.strings.t(
+                        'layoutChanged',
+                        {'layout': next.label},
+                      ),
+                    ),
+                  ),
+                );
+              }
+            },
             icon: Icons.keyboard_alt_outlined,
-            label: controller.settings.layout == KeyboardLayoutProfile.enUs ? 'EN-US' : 'EN-GB',
+            label: controller.settings.activeKeyboardLayout.label,
           ),
           const SizedBox(width: 6),
           IconButton.filledTonal(
@@ -602,6 +657,7 @@ class _Composer extends StatelessWidget {
                     index: index + 1,
                     item: item,
                     onTap: () => onEditScreenshot(item),
+                    onDelete: () => controller.removeScreenshot(item.id),
                   );
                 },
               ),
@@ -655,10 +711,16 @@ class _Composer extends StatelessWidget {
 }
 
 class _ScreenshotTile extends StatelessWidget {
-  const _ScreenshotTile({required this.index, required this.item, required this.onTap});
+  const _ScreenshotTile({
+    required this.index,
+    required this.item,
+    required this.onTap,
+    required this.onDelete,
+  });
   final int index;
   final ScreenshotItem item;
   final VoidCallback onTap;
+  final Future<void> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -707,6 +769,22 @@ class _ScreenshotTile extends StatelessWidget {
                 radius: 13,
                 backgroundColor: CodeKeyTheme.primary,
                 child: Text('$index', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Material(
+                color: CodeKeyTheme.background.withValues(alpha: 0.82),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () async => onDelete(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(5),
+                    child: Icon(Icons.close_rounded, size: 16),
+                  ),
+                ),
               ),
             ),
             Positioned(
@@ -1113,7 +1191,10 @@ String _operationText(CodeKeyLocalizations strings, CodeOperation operation) => 
 };
 
 void _showError(BuildContext context, Object error) {
-  final message = error.toString().replaceFirst(RegExp(r'^[^:]+:\s*'), '');
+  final raw = error.toString().replaceFirst(RegExp(r'^[^:]+:\s*'), '');
+  final code = raw.split(':').first.trim();
+  final localized = context.strings.t(code);
+  final message = localized == code ? raw : localized;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(message), backgroundColor: CodeKeyTheme.danger),
   );

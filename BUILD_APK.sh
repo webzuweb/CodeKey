@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec "$(dirname "$0")/tool/build_apk.sh" "$@"
+exec "$(dirname "$0")/BUILD_ANDROID.sh" "$@"

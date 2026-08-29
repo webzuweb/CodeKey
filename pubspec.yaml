@@ -1,23 +1,26 @@
 name: codekey_app
-description: Android controller for the CodeKey ESP32-S3 USB HID keyboard bridge.
+description: Cross-platform Android and iOS controller for the CodeKey ESP32-S3 USB HID keyboard bridge.
 publish_to: none
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
-  sdk: '>=3.12.0 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  cross_file: ^0.3.5+5
   crypto: ^3.0.7
   flutter_reactive_ble: ^5.5.0
   flutter_secure_storage: ^11.0.0
   google_mlkit_text_recognition: ^0.17.1
   http: ^1.6.0
   image_picker: ^1.2.3
+  path_provider: ^2.1.6
   permission_handler: ^12.0.1
+  share_plus: ^13.3.0
   shared_preferences: ^2.5.5
 
 dev_dependencies:

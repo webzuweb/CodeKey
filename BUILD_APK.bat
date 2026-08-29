@@ -1,2 +1,2 @@
 @echo off
-call tool\build_apk.bat %*
+call BUILD_ANDROID.bat %*
